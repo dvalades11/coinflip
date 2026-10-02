@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EconPlay</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: #0b1220;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #e2e8f0;
+    overscroll-behavior: none;
+  }
+  #app {
+    max-width: 440px; margin: 0 auto; min-height: 100%;
+    padding: 20px 16px 40px;
+    display: flex; flex-direction: column;
+  }
+  .fade { animation: fade .35s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px);} to { opacity:1; transform:none;} }
+
+  :focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+  /* ---------- Home ---------- */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .brand { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+  .brand span { color: #38bdf8; }
+  .streak {
+    display: flex; align-items: center; gap: 6px;
+    background: #1e293b; border-radius: 999px; padding: 6px 12px;
+    font-size: 14px; font-weight: 700;
+  }
+  .streak.hot { background: linear-gradient(135deg,#f97316,#ef4444); }
+
+  .daily {
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    border-radius: 20px; padding: 18px; margin-bottom: 18px;
+    position: relative; overflow: hidden; cursor: pointer;
+    transition: transform .15s;
+  }
+  .daily:active { transform: scale(.98); }
+  .daily.done { background: linear-gradient(135deg,#1e293b,#334155); }
+  .daily .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: .85; font-weight: 700; }
+  .daily h3 { margin: 6px 0 4px; font-size: 19px; }
+  .daily p { margin: 0; font-size: 13px; opacity: .85; padding-right: 36px; }
+  .daily .check { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 28px; }
+
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; font-weight: 700; margin: 0 0 10px 4px; }
+
+  .level {
+    display: flex; align-items: center; gap: 14px;
+    background: #131c2e; border-radius: 18px; padding: 14px;
+    margin-bottom: 10px; cursor: pointer; border: 1px solid #1e293b;
+    transition: transform .15s, border-color .15s;
+  }
+  .level:active { transform: scale(.98); border-color: #334155; }
+  .level .icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: grid; place-items: center; font-size: 24px; flex-shrink: 0;
+  }
+  .level .meta { flex: 1; min-width: 0; }
+  .level .meta h4 { margin: 0 0 3px; font-size: 16px; font-weight: 700; }
+  .level .meta p { margin: 0; font-size: 12px; color: #94a3b8; }
+  .level .stars { font-size: 14px; letter-spacing: 2px; color: #334155; flex-shrink: 0; }
+  .level .stars .on { color: #fbbf24; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: block; width: 100%; border: none; border-radius: 16px;
+    padding: 16px; font-size: 16px; font-weight: 700; font-family: inherit;
+    background: #38bdf8; color: #06121f; cursor: pointer;
+    transition: transform .12s, opacity .12s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.ghost { background: #1e293b; color: #cbd5e1; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-row .btn { margin: 0; }
+
+  /* ---------- Level screens ---------- */
+  .back { background: none; border: none; color: #64748b; font-size: 15px; font-family: inherit; padding: 4px 0; cursor: pointer; margin-bottom: 10px; align-self: flex-start; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.4px; padding: 5px 11px; border-radius: 999px; margin-bottom: 12px; }
+  h1.title { font-size: 26px; margin: 0 0 8px; letter-spacing: -.6px; line-height: 1.15; text-wrap: balance; }
+  .lede { font-size: 15px; line-height: 1.5; color: #94a3b8; margin: 0 0 20px; }
+  .lede b { color: #e2e8f0; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .card {
+    background: #131c2e; border: 2px solid #1e293b; border-radius: 16px;
+    padding: 16px 10px; text-align: center; cursor: pointer; color: inherit; font-family: inherit;
+    transition: transform .12s, border-color .15s, background .15s;
+  }
+  .card:active { transform: scale(.95); }
+  .card.sel { border-color: #38bdf8; background: #0e2233; }
+  .card .em { font-size: 26px; display: block; margin-bottom: 6px; }
+  .card .nm { font-size: 13px; font-weight: 600; }
+  .card .vl { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  .slider-wrap { background: #131c2e; border-radius: 18px; padding: 18px; margin-bottom: 16px; border: 1px solid #1e293b; }
+  .slider-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .slider-head .lbl { font-size: 14px; color: #94a3b8; }
+  .slider-head .val { font-size: 26px; font-weight: 800; color: #38bdf8; font-variant-numeric: tabular-nums; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px;
+    background: #1e293b; outline: none; margin: 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
+    background: #38bdf8; cursor: pointer; border: 4px solid #0b1220;
+    box-shadow: 0 0 0 1px #38bdf8;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: #38bdf8;
+    cursor: pointer; border: 4px solid #0b1220;
+  }
+  .scale { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-top: 8px; }
+
+  /* ---------- Results ---------- */
+  .result-box { background: #131c2e; border-radius: 18px; padding: 18px; margin-bottom: 14px; border: 1px solid #1e293b; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 14px; border-bottom: 1px solid #1e293b; }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: #94a3b8; min-width: 0; }
+  .row .v { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .good { color: #4ade80; } .bad { color: #f87171; } .warn { color: #fbbf24; }
+
+  .verdict { border-radius: 18px; padding: 16px; margin-bottom: 14px; font-size: 15px; line-height: 1.5; }
+  .verdict.win { background: #052e1c; border: 1px solid #166534; color: #bbf7d0; }
+  .verdict.lose { background: #2e0d0d; border: 1px solid #7f1d1d; color: #fecaca; }
+  .verdict.mid { background: #2a1f05; border: 1px solid #854d0e; color: #fde68a; }
+  .verdict strong { display: block; margin-bottom: 6px; font-size: 16px; }
+
+  .insight { background: #0e2233; border-left: 3px solid #38bdf8; border-radius: 0 12px 12px 0; padding: 14px; font-size: 14px; line-height: 1.5; color: #bae6fd; margin-bottom: 16px; }
+  .insight > b:first-child { color: #38bdf8; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 5px; }
+
+  /* ---------- Chart ---------- */
+  .chart { width: 100%; height: auto; display: block; margin: 4px 0 12px; }
+  .chart .grid { stroke: #334155; stroke-width: 1; }
+  .chart .line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .chart .draw { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 1.1s ease forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+
+  /* ---------- Challenge ---------- */
+  .timerbar { height: 5px; background: #1e293b; border-radius: 999px; overflow: hidden; margin-bottom: 20px; }
+  .timerbar i { display: block; height: 100%; background: linear-gradient(90deg,#38bdf8,#a855f7); width: 100%; }
+  .timerbar.run i { animation: shrink 8s linear forwards; }
+  @keyframes shrink { to { width: 0%; } }
+
+  .option-btn {
+    display: block; width: 100%; text-align: left; background: #131c2e;
+    border: 2px solid #1e293b; border-radius: 14px; padding: 15px 16px;
+    color: #e2e8f0; font-size: 15px; font-family: inherit; font-weight: 600;
+    margin-bottom: 9px; cursor: pointer; transition: transform .12s, border-color .15s;
+  }
+  .option-btn:active { transform: scale(.98); }
+  .option-btn.picked { border-color: #38bdf8; background: #0e2233; }
+  .option-btn.correct { border-color: #4ade80; background: #052e1c; }
+  .option-btn.wrong { border-color: #f87171; background: #2e0d0d; }
+
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 18px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: #1e293b; }
+  .dots i.on { background: #38bdf8; }
+  .dots i.ok { background: #4ade80; }
+  .dots i.no { background: #f87171; }
+
+  .center { text-align: center; }
+  .big-star { font-size: 52px; margin: 10px 0; letter-spacing: 6px; }
+  .muted { color: #64748b; font-size: 13px; line-height: 1.5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fade, .chart .draw { animation: none; stroke-dashoffset: 0; }
+    .btn, .card, .level, .option-btn, .daily { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   STATE
+   ========================================================= */
+const DEFAULT = { stars: {}, streak: 0, lastDaily: null };
+let S = load();
+let screen = 'home';
+let payload = {};
+
+function load() {
+  try {
+    const raw = localStorage.getItem('econplay');
+    if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw));
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function save() {
+  try { localStorage.setItem('econplay', JSON.stringify(S)); } catch (e) {}
+}
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function todayKey() { return dateKey(new Date()); }
+// Day index in the player's local calendar, so the daily puzzle flips at local midnight.
+function localDayIndex() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function setStars(id, n) {
+  if ((S.stars[id] || 0) < n) S.stars[id] = n;
+  save();
+}
+function starRow(n) {
+  return [0,1,2].map(i=>`<span style="color:${i<n?'#fbbf24':'#1e293b'}">★</span>`).join('');
+}
+
+/* =========================================================
+   LEVEL DEFINITIONS
+   ========================================================= */
+const LEVELS = [
+  { id:'opp',    emoji:'🌙', title:'Friday Night',  sub:'Opportunity Cost',        color:'#f59e0b', bg:'#2a1f05' },
+  { id:'marg',   emoji:'☕', title:'Coffee Stand',  sub:'Marginal Thinking',       color:'#22c55e', bg:'#052e1c' },
+  { id:'fish',   emoji:'🐟', title:'Fish Pond',     sub:'Feedback Loops',          color:'#06b6d4', bg:'#062a33' },
+  { id:'policy', emoji:'🏛️', title:'Policy Lab',    sub:'Unintended Consequences', color:'#ec4899', bg:'#2e0a20' }
+];
+
+/* =========================================================
+   RENDER ROUTER
+   ========================================================= */
+const app = document.getElementById('app');
+function go(s, p) {
+  clearTimeout(chalTimer);
+  screen = s; payload = p || {}; render(); window.scrollTo(0,0);
+}
+function render() {
+  const map = {
+    home: renderHome,
+    opp: renderOpp,
+    marg: renderMarg,
+    fish: renderFish,
+    policy: renderPolicy,
+    daily: renderDaily,
+    challenge: renderChallenge
+  };
+  const node = map[screen]();
+  node.classList.add('fade');
+  app.innerHTML = '';
+  app.appendChild(node);
+}
+function h(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html.trim();
+  return d.firstElementChild;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* =========================================================
+   HOME
+   ========================================================= */
+function renderHome() {
+  const dailyDone = S.lastDaily === todayKey();
+  const totalStars = Object.values(S.stars).reduce((a,b)=>a+b,0);
+  const maxStars = LEVELS.length * 3 + 3;
+
+  const levelsHTML = LEVELS.map(l => {
+    const st = S.stars[l.id] || 0;
+    const stars = [0,1,2].map(i => `<span class="${i<st?'on':''}">★</span>`).join('');
+    return `
+      <div class="level" role="button" tabindex="0" onclick="go('${l.id}')">
+        <div class="icon" style="background:${l.bg}; color:${l.color}">${l.emoji}</div>
+        <div class="meta">
+          <h4>${l.title}</h4>
+          <p>${l.sub}</p>
+        </div>
+        <div class="stars" aria-label="${st} of 3 stars">${stars}</div>
+      </div>`;
+  }).join('');
+
+  return h(`
+    <div>
+      <div class="topbar">
+        <div class="brand">Econ<span>Play</span></div>
+        <div class="streak ${S.streak>0?'hot':''}" title="Daily streak">🔥 ${S.streak}</div>
+      </div>
+
+      <div class="daily ${dailyDone?'done':''}" role="button" tabindex="0" onclick="go('daily')">
+        <div class="tag">Daily Challenge</div>
+        <h3>${dailyDone ? 'Done for today' : "Today's puzzle"}</h3>
+        <p>${dailyDone ? 'Come back tomorrow to keep your streak' : 'One decision. One minute. Same for everyone.'}</p>
+        ${dailyDone ? '<div class="check">✅</div>' : ''}
+      </div>
+
+      <p class="section-label">Learn</p>
+      ${levelsHTML}
+
+      <p class="section-label" style="margin-top:20px">Test</p>
+      <div class="level" role="button" tabindex="0" onclick="go('challenge')" style="border-color:#334155">
+        <div class="icon" style="background:#2a1f05; color:#fbbf24">⚡</div>
+        <div class="meta">
+          <h4>Challenge Mode</h4>
+          <p>${CHALLENGE_QS.length} rapid questions · no hints · 8s each</p>
+        </div>
+        <div class="stars">
+          ${[0,1,2].map(i=>`<span class="${i<(S.stars['challenge']||0)?'on':''}">★</span>`).join('')}
+        </div>
+      </div>
+
+      <p class="muted center" style="margin-top:22px">
+        ${totalStars} / ${maxStars} stars collected
+      </p>
+    </div>
+  `);
+}
+
+// Keyboard access for div "buttons"
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role=button]')) {
+    e.preventDefault(); e.target.click();
+  }
+});
+
+/* =========================================================
+   LEVEL 1 — OPPORTUNITY COST
+   ========================================================= */
+const OPP_OPTIONS = [
+  { id:'study',   label:'Study',   value:8,  emoji:'📚' },
+  { id:'work',    label:'Work',    value:6,  emoji:'💼' },
+  { id:'friends', label:'Friends', value:10, emoji:'🧑‍🤝‍🧑' },
+  { id:'gym',     label:'Gym',     value:7,  emoji:'🏋️' },
+  { id:'rest',    label:'Rest',    value:5,  emoji:'😴' },
+  { id:'game',    label:'Game',    value:9,  emoji:'🎮' }
+];
+let oppPicked = [];
+
+function renderOpp() {
+  if (payload.stage === 'result') return renderOppResult();
+  oppPicked = [];
+
+  const cards = OPP_OPTIONS.map(o => `
+    <button class="card" id="card-${o.id}" onclick="toggleOpp('${o.id}')">
+      <span class="em">${o.emoji}</span>
+      <div class="nm">${o.label}</div>
+      <div class="vl">${o.value} pts</div>
+    </button>`).join('');
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Back</button>
+      <span class="pill" style="background:#2a1f05; color:#f59e0b">Opportunity Cost</span>
+      <h1 class="title">Friday Night Planner</h1>
+      <p class="lede">You have one free night. Pick 3 activities. The best one you <b>leave behind</b> is your opportunity cost.</p>
+      <div class="cards">${cards}</div>
+      <button class="btn" id="oppConfirm" disabled onclick="finishOpp()">Pick 3 activities</button>
+    </div>
+  `);
+}
+
+function toggleOpp(id) {
+  const i = oppPicked.indexOf(id);
+  const el = document.getElementById('card-' + id);
+  if (i > -1) { oppPicked.splice(i,1); el.classList.remove('sel'); }
+  else if (oppPicked.length < 3) { oppPicked.push(id); el.classList.add('sel'); }
+  else return;
+
+  const btn = document.getElementById('oppConfirm');
+  btn.disabled = oppPicked.length !== 3;
+  btn.textContent = oppPicked.length === 3 ? 'Confirm choices' : `Pick ${3 - oppPicked.length} more`;
+}
+
+function finishOpp() {
+  const picked = OPP_OPTIONS.filter(o => oppPicked.includes(o.id));
+  const skipped = OPP_OPTIONS.filter(o => !oppPicked.includes(o.id)).sort((a,b) => b.value - a.value);
+  const total = picked.reduce((a,b) => a + b.value, 0);
+  const bestSkipped = skipped[0];
+  const maxPossible = 10 + 9 + 8;
+
+  let stars = 1;
+  if (total >= 24) stars = 2;
+  if (total >= 27) stars = 3;
+  setStars('opp', stars);
+
+  go('opp', { stage:'result', picked, skipped, total, bestSkipped, stars, maxPossible });
+}
+
+function renderOppResult() {
+  const { picked, skipped, total, bestSkipped, stars, maxPossible } = payload;
+  const perfect = total === maxPossible;
+
+  const pickedRows = picked.map(p =>
+    `<div class="row"><span class="k">${p.emoji} ${p.label}</span><span class="v good">+${p.value}</span></div>`
+  ).join('');
+
+  const skippedRows = skipped.map((s,i) =>
+    `<div class="row"><span class="k">${s.emoji} ${s.label}${i===0?' · <b class="warn">best alternative</b>':''}</span><span class="v ${i===0?'warn':'bad'}">${s.value}</span></div>`
+  ).join('');
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#2a1f05; color:#f59e0b">Result</span>
+      <h1 class="title">${total} points earned</h1>
+
+      <div class="result-box">
+        <div class="row"><span class="k">Your picks</span><span class="v">${total} / ${maxPossible} pts</span></div>
+        ${pickedRows}
+      </div>
+
+      <p class="section-label">What you gave up</p>
+      <div class="result-box">
+        ${skippedRows}
+      </div>
+
+      <div class="verdict ${perfect?'win':'mid'}">
+        <strong>Opportunity cost = ${bestSkipped.value}</strong>
+        You said yes to ${picked.length} things. The real cost isn't the sum of everything you skipped. It's the <b>single best one</b>: ${bestSkipped.emoji} ${bestSkipped.label}.
+        ${perfect ? '' : `<br><br>Swapping your lowest pick for ${bestSkipped.label} would have earned more.`}
+      </div>
+
+      <div class="insight">
+        <b>Key idea</b>
+        Every yes is a no. When you choose, you give up your best alternative, and that alternative is the true price.
+      </div>
+
+      <div class="center big-star" aria-label="${stars} of 3 stars">${starRow(stars)}</div>
+
+      <button class="btn" onclick="go('marg')">Next: Coffee Stand →</button>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="go('opp')">Try again</button>
+        <button class="btn ghost" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  `);
+}
+
+/* =========================================================
+   LEVEL 2 — MARGINAL THINKING
+   ========================================================= */
+let margChoice = null;
+
+function renderMarg() {
+  if (payload.stage === 'result') return renderMargResult();
+  margChoice = null;
+
+  const v = { workerCost:20, cups:15, profit:2 };
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Back</button>
+      <span class="pill" style="background:#052e1c; color:#22c55e">Marginal Thinking</span>
+      <h1 class="title">The 4th Worker</h1>
+      <p class="lede">Your coffee stand has 3 workers and demand is surging. Should you hire one more?</p>
+
+      <div class="result-box">
+        <div class="row"><span class="k">Extra cups they can make per day</span><span class="v">${v.cups}</span></div>
+        <div class="row"><span class="k">Profit per cup</span><span class="v">$${v.profit}</span></div>
+        <div class="row"><span class="k">Daily wage for the 4th worker</span><span class="v bad">$${v.workerCost}</span></div>
+      </div>
+
+      <p class="lede" style="margin-bottom:12px"><b>Hire the 4th worker?</b></p>
+
+      <button class="option-btn" id="opt-hire" onclick="pickMarg('hire')">✅ Hire them</button>
+      <button class="option-btn" id="opt-stop" onclick="pickMarg('stop')">⛔ Keep 3 workers</button>
+
+      <button class="btn" id="margConfirm" style="margin-top:6px" disabled onclick="finishMarg()">Confirm</button>
+    </div>
+  `);
+}
+
+function pickMarg(c) {
+  margChoice = c;
+  document.getElementById('opt-hire').classList.toggle('picked', c === 'hire');
+  document.getElementById('opt-stop').classList.toggle('picked', c === 'stop');
+  document.getElementById('margConfirm').disabled = false;
+}
+
+function finishMarg() {
+  const rev = 15 * 2, cost = 20, net = rev - cost;
+  const correct = margChoice === 'hire';
+  const stars = correct ? 3 : 1;
+  setStars('marg', stars);
+  go('marg', { stage:'result', rev, cost, net, correct, stars });
+}
+
+function renderMargResult() {
+  const { rev, cost, net, correct, stars } = payload;
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#052e1c; color:#22c55e">Result</span>
+      <h1 class="title">${correct ? 'Correct call' : 'You left money behind'}</h1>
+
+      <div class="result-box">
+        <div class="row"><span class="k">Marginal benefit (15 × $2)</span><span class="v good">+$${rev}</span></div>
+        <div class="row"><span class="k">Marginal cost (wage)</span><span class="v bad">−$${cost}</span></div>
+        <div class="row"><span class="k"><b>Net gain</b></span><span class="v ${net>0?'good':'bad'}">${net>0?'+':''}$${net}</span></div>
+      </div>
+
+      <div class="verdict ${correct?'win':'mid'}">
+        <strong>${correct ? 'You hired. Net +$10 per day.' : 'You should have hired. That\'s $10/day missed.'}</strong>
+        Marginal benefit ($30) beat marginal cost ($20). When the next unit earns more than it costs, take it.
+      </div>
+
+      <div class="insight">
+        <b>Key idea</b>
+        Think in <b>extras</b>, not totals. Compare the extra revenue from one more worker against the extra cost of that worker. Sunk costs don't matter.
+      </div>
+
+      <p class="section-label">And the 5th worker?</p>
+      <div class="result-box">
+        <div class="row"><span class="k">5th worker adds</span><span class="v">8 cups → $16</span></div>
+        <div class="row"><span class="k">5th worker costs</span><span class="v">$20</span></div>
+        <div class="row"><span class="k">Should you hire them?</span><span class="v bad">No, stop at 4</span></div>
+      </div>
+
+      <div class="center big-star" aria-label="${stars} of 3 stars">${starRow(stars)}</div>
+
+      <button class="btn" onclick="go('fish')">Next: Fish Pond →</button>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="go('marg')">Try again</button>
+        <button class="btn ghost" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  `);
+}
+
+/* =========================================================
+   LEVEL 3 — FEEDBACK LOOPS (Fish Pond)
+   ========================================================= */
+const FISH_SEASONS = 10;
+const FISH_COLLAPSE = 20;
+let fishRate = 12;
+
+function simulateFish(ratePct) {
+  const r = ratePct / 100;
+  const regen = 0.10;
+  const stock = [100, 100];
+  const catchArr = [];
+  let collapsed = false;
+
+  for (let t = 2; t <= FISH_SEASONS + 1; t++) {
+    const births = regen * stock[t - 2];
+    const harvest = r * stock[t - 1];
+    const next = stock[t - 1] + births - harvest;
+    catchArr.push(Math.round(harvest * 10) / 10);
+    if (next < FISH_COLLAPSE) { stock.push(0); collapsed = true; break; }
+    stock.push(Math.round(next * 10) / 10);
+  }
+  const totalCatch = catchArr.reduce((a,b) => a + b, 0);
+  return { stock, totalCatch: Math.round(totalCatch), collapsed };
+}
+
+function renderFish() {
+  if (payload.stage === 'result') return renderFishResult();
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Back</button>
+      <span class="pill" style="background:#062a33; color:#06b6d4">Feedback Loops</span>
+      <h1 class="title">Fish Pond</h1>
+      <p class="lede">You manage a pond with <b>100 fish</b>. Each season, births equal ~10% of the population two seasons ago. Pick a harvest rate. The goal: catch plenty <b>and</b> leave a healthy pond.</p>
+
+      <div class="result-box" style="margin-bottom:16px">
+        <div class="row"><span class="k">🐟 Fish → births → more fish</span><span class="v good">Reinforcing</span></div>
+        <div class="row"><span class="k">🪝 Harvest → fewer fish → fewer births</span><span class="v bad">Balancing</span></div>
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-head">
+          <label class="lbl" for="fishSlider">Harvest rate</label>
+          <span class="val" id="fishVal">${fishRate}%</span>
+        </div>
+        <input type="range" min="0" max="40" value="${fishRate}" id="fishSlider"
+          oninput="fishRate=+this.value; document.getElementById('fishVal').textContent=this.value+'%'">
+        <div class="scale"><span>0%</span><span>10% = breeding rate</span><span>40%</span></div>
+      </div>
+
+      <p class="muted" style="margin:0 0 16px">⚠️ Harvest faster than they breed and the pond shrinks. Push too hard and it collapses below ${FISH_COLLAPSE} fish. Births lag, so the damage shows up later.</p>
+
+      <button class="btn" onclick="runFish()">Run ${FISH_SEASONS} seasons</button>
+    </div>
+  `);
+}
+
+function runFish() {
+  const sim = simulateFish(fishRate);
+  const finalStock = sim.stock[sim.stock.length - 1];
+  // Reward sustainable yield: a big catch that leaves a healthy pond.
+  let stars = 1;
+  if (!sim.collapsed && sim.totalCatch >= 50 && finalStock >= 60) stars = 2;
+  if (!sim.collapsed && sim.totalCatch >= 90 && finalStock >= 90) stars = 3;
+  setStars('fish', stars);
+  go('fish', { stage:'result', ...sim, finalStock, rate: fishRate, stars });
+}
+
+function fishChart(stock, collapsed) {
+  const W = 320, H = 150, padL = 26, padR = 10, padT = 10, padB = 20;
+  const maxV = Math.max(140, Math.ceil(Math.max(...stock) / 20) * 20);
+  const n = FISH_SEASONS + 2; // fixed axis: seasons 0..11, so a collapse ends early
+  const x = i => padL + (i / (n - 1)) * (W - padL - padR);
+  const y = v => H - padB - (v / maxV) * (H - padT - padB);
+  const pts = stock.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const col = collapsed ? '#f87171' : '#06b6d4';
+  const ticks = [0, 50, 100].filter(v => v <= maxV);
+
+  return `
+    <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Fish stock by season">
+      ${ticks.map(v => `
+        <line class="grid" x1="${padL}" y1="${y(v)}" x2="${W-padR}" y2="${y(v)}" stroke-opacity=".5"/>
+        <text x="${padL-5}" y="${y(v)+3}" fill="#64748b" font-size="9" text-anchor="end">${v}</text>`).join('')}
+      <line class="grid" x1="${padL}" y1="${y(FISH_COLLAPSE)}" x2="${W-padR}" y2="${y(FISH_COLLAPSE)}" stroke="#f87171" stroke-opacity=".6" stroke-dasharray="4 4"/>
+      <text x="${W-padR}" y="${y(FISH_COLLAPSE)-4}" fill="#f87171" font-size="9" text-anchor="end">collapse (${FISH_COLLAPSE})</text>
+      <text x="${padL}" y="${H-5}" fill="#64748b" font-size="9">season 0</text>
+      <text x="${W-padR}" y="${H-5}" fill="#64748b" font-size="9" text-anchor="end">season ${n-1}</text>
+      <polyline class="line draw" points="${pts}" stroke="${col}"/>
+      ${stock.map((v,i) => `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="${col}"/>`).join('')}
+    </svg>`;
+}
+
+function renderFishResult() {
+  const { stock, totalCatch, collapsed, rate, stars, finalStock } = payload;
+
+  let verdictClass, verdictTitle, verdictText;
+  if (collapsed) {
+    verdictClass = 'lose';
+    verdictTitle = '💥 The pond collapsed';
+    verdictText = `You harvested at ${rate}%, far faster than the fish could breed. Because births lag behind, the damage built up quietly until the stock crashed.`;
+  } else if (rate <= 10 && totalCatch < 50) {
+    verdictClass = 'mid';
+    verdictTitle = '🐢 Too cautious';
+    verdictText = `At ${rate}% the pond grew to ${finalStock} fish, but you only caught ${totalCatch}. A rate closer to the 10% breeding rate harvests the surplus without shrinking the stock.`;
+  } else if (rate <= 11) {
+    verdictClass = 'win';
+    verdictTitle = '✅ Sustainable harvest';
+    verdictText = `At ${rate}% you harvested about what the fish replace each season. The stock held near ${finalStock} and you caught ${totalCatch} fish. The pond can keep doing this forever.`;
+  } else {
+    verdictClass = 'mid';
+    verdictTitle = '⚠️ Slow decline';
+    verdictText = `At ${rate}% you caught ${totalCatch} fish, but you out-harvested the breeding rate. The pond shrank to ${finalStock}, so every future season yields less.`;
+  }
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#062a33; color:#06b6d4">Result</span>
+      <h1 class="title">${collapsed ? 'Collapse' : finalStock + ' fish remain'}</h1>
+
+      <div class="legend">
+        <span><i style="background:${collapsed?'#f87171':'#06b6d4'}"></i>Fish stock over ${FISH_SEASONS} seasons</span>
+      </div>
+      ${fishChart(stock, collapsed)}
+
+      <div class="result-box">
+        <div class="row"><span class="k">Harvest rate</span><span class="v">${rate}%</span></div>
+        <div class="row"><span class="k">Breeding rate</span><span class="v">10%</span></div>
+        <div class="row"><span class="k">Total fish caught</span><span class="v good">${totalCatch}</span></div>
+        <div class="row"><span class="k">Final stock</span><span class="v ${finalStock < 60 ? 'bad' : 'good'}">${finalStock}</span></div>
+      </div>
+
+      <div class="verdict ${verdictClass}">
+        <strong>${verdictTitle}</strong>
+        ${verdictText}
+      </div>
+
+      <div class="insight">
+        <b>Key idea</b>
+        A stock grows by inflows and shrinks by outflows. Harvest is a balancing loop: it reduces the very thing that produces next season's fish. Because births lag, the feedback is <b>delayed</b>. By the time you see the problem, it's already locked in.
+      </div>
+
+      <div class="center big-star" aria-label="${stars} of 3 stars">${starRow(stars)}</div>
+
+      <button class="btn" onclick="go('policy')">Next: Policy Lab →</button>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="go('fish')">Try again</button>
+        <button class="btn ghost" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  `);
+}
+
+/* =========================================================
+   LEVEL 4 — UNINTENDED CONSEQUENCES (Policy Lab)
+   ========================================================= */
+let policyChoice = null;
+
+const POLICIES = {
+  none: {
+    label: 'No rent control',
+    desc: 'Let the market set rents.',
+    emoji: '🏙️',
+    afford: [35, 35, 35, 34, 34, 34],
+    supply: [85, 85, 86, 86, 87, 87],
+    fair:   [85, 85, 85, 86, 86, 86]
+  },
+  mild: {
+    label: 'Mild cap (10% below market)',
+    desc: 'Gentle protection for tenants.',
+    emoji: '⚖️',
+    afford: [45, 52, 56, 57, 56, 55],
+    supply: [85, 80, 74, 70, 67, 65],
+    fair:   [85, 82, 78, 75, 72, 70]
+  },
+  strict: {
+    label: 'Strict cap (40% below market)',
+    desc: 'Aggressive affordability push.',
+    emoji: '🔒',
+    afford: [60, 75, 82, 70, 55, 42],
+    supply: [85, 72, 58, 46, 38, 32],
+    fair:   [85, 78, 68, 56, 48, 42]
+  }
+};
+const POLICY_ROUNDS = 6;
+
+function renderPolicy() {
+  if (payload.stage === 'result') return renderPolicyResult();
+  policyChoice = null;
+
+  const opts = Object.entries(POLICIES).map(([k,p]) => `
+    <button class="option-btn" id="pol-${k}" onclick="pickPolicy('${k}')">
+      <div style="font-size:20px; margin-bottom:3px">${p.emoji}</div>
+      <div>${p.label}</div>
+      <div style="font-size:12px; color:#94a3b8; font-weight:400; margin-top:3px">${p.desc}</div>
+    </button>`).join('');
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Back</button>
+      <span class="pill" style="background:#2e0a20; color:#ec4899">Unintended Consequences</span>
+      <h1 class="title">Policy Lab</h1>
+      <p class="lede">You run a city. Rents are rising and tenants are struggling. Pick a housing policy and watch what happens over <b>${POLICY_ROUNDS} rounds</b>.</p>
+
+      <div class="result-box" style="margin-bottom:16px">
+        <div class="row"><span class="k">🎯 Goal</span><span class="v">All metrics ≥ 50 at the end</span></div>
+        <div class="row"><span class="k">Tracked</span><span class="v">Affordability · Supply · Fairness</span></div>
+      </div>
+
+      ${opts}
+      <button class="btn" id="polConfirm" style="margin-top:6px" disabled onclick="finishPolicy()">Run simulation</button>
+    </div>
+  `);
+}
+
+function pickPolicy(k) {
+  policyChoice = k;
+  Object.keys(POLICIES).forEach(key => {
+    document.getElementById('pol-' + key).classList.toggle('picked', key === k);
+  });
+  document.getElementById('polConfirm').disabled = false;
+}
+
+function finishPolicy() {
+  const p = POLICIES[policyChoice];
+  const last = POLICY_ROUNDS - 1;
+  const passed = [p.afford[last], p.supply[last], p.fair[last]].filter(v => v >= 50).length;
+
+  let stars = 1;
+  if (passed === 2) stars = 2;
+  if (passed === 3) stars = 3;
+  setStars('policy', stars);
+
+  go('policy', { stage:'result', key: policyChoice, passed, stars });
+}
+
+function policyChart(p) {
+  const W = 320, H = 150, padL = 26, padR = 10, padT = 10, padB = 20;
+  const n = POLICY_ROUNDS;
+  const x = i => padL + (i / (n - 1)) * (W - padL - padR);
+  const y = v => H - padB - (v / 100) * (H - padT - padB);
+  const mk = (arr, color) =>
+    `<polyline class="line draw" points="${arr.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" stroke="${color}"/>`;
+
+  return `
+    <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Metrics by round">
+      ${[0, 100].map(v => `<text x="${padL-5}" y="${y(v)+3}" fill="#64748b" font-size="9" text-anchor="end">${v}</text>`).join('')}
+      <line class="grid" x1="${padL}" y1="${y(50)}" x2="${W-padR}" y2="${y(50)}" stroke-dasharray="4 4"/>
+      <text x="${padL-5}" y="${y(50)+3}" fill="#64748b" font-size="9" text-anchor="end">50</text>
+      <text x="${W-padR}" y="${y(50)-4}" fill="#64748b" font-size="9" text-anchor="end">pass line</text>
+      ${Array.from({length:n}, (_,i) => `<text x="${x(i)}" y="${H-5}" fill="#64748b" font-size="9" text-anchor="middle">R${i+1}</text>`).join('')}
+      ${mk(p.afford, '#fbbf24')}
+      ${mk(p.supply, '#4ade80')}
+      ${mk(p.fair,   '#ec4899')}
+    </svg>`;
+}
+
+function renderPolicyResult() {
+  const p = POLICIES[payload.key];
+  const last = POLICY_ROUNDS - 1;
+  const fA = p.afford[last], fS = p.supply[last], fF = p.fair[last];
+  const { passed, stars } = payload;
+
+  const metric = (label, val, color) =>
+    `<div class="row"><span class="k"><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${color};margin-right:7px"></i>${label}</span>
+     <span class="v ${val>=50?'good':'bad'}">${val}</span></div>`;
+
+  let verdictClass, verdictTitle, verdictText;
+  if (passed === 3) {
+    verdictClass = 'win';
+    verdictTitle = '✅ Balanced policy';
+    verdictText = 'You protected tenants without killing supply. A modest intervention kept all three metrics above the line.';
+  } else if (p.afford[2] > 70 && fA < 50) {
+    verdictClass = 'lose';
+    verdictTitle = '💥 Backfire';
+    verdictText = 'Affordability looked great for 3 rounds. Then landlords stopped maintaining and building, supply dried up, and rents rose anyway through a black market.';
+  } else if (passed === 2) {
+    verdictClass = 'mid';
+    verdictTitle = '⚠️ Partial success';
+    verdictText = 'Supply and fairness held, but rents stayed out of reach for many tenants. Doing nothing is also a choice with trade-offs.';
+  } else {
+    verdictClass = 'lose';
+    verdictTitle = '❌ Failed';
+    verdictText = 'Multiple metrics dropped below the line. The intervention created more problems than it solved.';
+  }
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#2e0a20; color:#ec4899">Result</span>
+      <h1 class="title">${p.emoji} ${p.label}</h1>
+
+      <div class="legend">
+        <span><i style="background:#fbbf24"></i>Affordability</span>
+        <span><i style="background:#4ade80"></i>Supply</span>
+        <span><i style="background:#ec4899"></i>Fairness</span>
+      </div>
+      ${policyChart(p)}
+
+      <div class="result-box">
+        ${metric('Affordability', fA, '#fbbf24')}
+        ${metric('Supply', fS, '#4ade80')}
+        ${metric('Fairness', fF, '#ec4899')}
+      </div>
+
+      <div class="verdict ${verdictClass}">
+        <strong>${verdictTitle}</strong>
+        ${verdictText}
+      </div>
+
+      <div class="insight">
+        <b>Key idea</b>
+        Policies change incentives, and incentives create <b>new feedback loops</b>. A cap that helps tenants today reduces the return on building tomorrow, so supply falls and the shortage undoes the very thing you were trying to fix. The damage arrives with a <b>delay</b>, which is why it's unintended.
+      </div>
+
+      <div class="center big-star" aria-label="${stars} of 3 stars">${starRow(stars)}</div>
+
+      <div class="btn-row" style="margin-top:0">
+        <button class="btn ghost" onclick="go('policy')">Try another policy</button>
+        <button class="btn" onclick="go('challenge')">Challenge ⚡</button>
+      </div>
+    </div>
+  `);
+}
+
+/* =========================================================
+   DAILY CHALLENGE
+   ========================================================= */
+const DAILY_POOL = [
+  {
+    concept: 'Opportunity Cost', color: '#f59e0b',
+    q: 'You skip a $30 shift to study for an exam. Is the $30 your opportunity cost?',
+    options: ['Yes, it\'s the value of what you gave up', 'No, money isn\'t a real cost', 'Only if you failed the exam'],
+    correct: 0,
+    why: 'Opportunity cost is the value of your best foregone alternative. The shift you skipped is exactly that.'
+  },
+  {
+    concept: 'Marginal Thinking', color: '#22c55e',
+    q: 'A 3rd worker adds $15 of revenue and costs $20 in wages. Should you hire them?',
+    options: ['Yes, more workers means more output', 'No, marginal cost exceeds marginal benefit', 'Only if you already have 2 workers'],
+    correct: 1,
+    why: 'The extra revenue ($15) is less than the extra cost ($20). Stop at 2 workers.'
+  },
+  {
+    concept: 'Feedback Loops', color: '#06b6d4',
+    q: 'You harvest fish below the breeding rate. What happens to the stock over time?',
+    options: ['It falls to zero', 'It holds steady or grows', 'It shrinks slowly'],
+    correct: 1,
+    why: 'Harvest below regeneration means inflows exceed outflows, so the stock holds or grows until the pond\'s natural limits kick in.'
+  },
+  {
+    concept: 'Unintended Consequences', color: '#ec4899',
+    q: 'A city caps rents 40% below market. A few years later, what most likely happens to housing supply?',
+    options: ['It rises because cheaper housing attracts builders', 'It falls because lower returns discourage building', 'It stays exactly the same'],
+    correct: 1,
+    why: 'Lower returns on rentals reduce maintenance and new construction. Supply falls, and the shortage pushes rents back up.'
+  },
+  {
+    concept: 'Opportunity Cost', color: '#f59e0b',
+    q: 'You have 2 hours. Options: gym (7 pts), game (9 pts), friends (10 pts). You pick gym. What\'s the opportunity cost?',
+    options: ['9 points', '10 points', '19 points'],
+    correct: 1,
+    why: 'Opportunity cost is the single best alternative you gave up: friends at 10 points. Not the sum of everything.'
+  },
+  {
+    concept: 'Marginal Thinking', color: '#22c55e',
+    q: 'You\'ve already spent $500 on a laptop that broke. Fixing it costs $200; a replacement costs $600. What should you do?',
+    options: ['Buy the replacement, since you\'ve lost enough on this one', 'Fix it, because the $500 is sunk', 'Nothing, since you already spent $500'],
+    correct: 1,
+    why: 'The $500 is gone either way. Compare only the forward-looking costs: $200 to fix vs $600 to replace.'
+  },
+  {
+    concept: 'Feedback Loops', color: '#06b6d4',
+    q: 'A thermostat turns on the AC when the room gets hot. This is what kind of loop?',
+    options: ['Reinforcing, because it amplifies change', 'Balancing, because it counteracts change', 'No loop at all'],
+    correct: 1,
+    why: 'A balancing loop pushes the system back toward a target. Reinforcing loops amplify change, like compound interest.'
+  },
+  {
+    concept: 'Unintended Consequences', color: '#ec4899',
+    q: 'A company offers a bonus for every bug fixed. What might happen?',
+    options: ['Bugs get fixed faster and stay fixed', 'Developers may write more bugs to fix them', 'Nothing changes'],
+    correct: 1,
+    why: 'Incentives change behavior. Reward fixing bugs and you may get more bugs. This is Goodhart\'s Law in action.'
+  }
+];
+
+function renderDaily() {
+  if (payload.stage === 'result') return renderDailyResult();
+
+  const idx = localDayIndex() % DAILY_POOL.length;
+  const item = DAILY_POOL[idx];
+  const alreadyDone = S.lastDaily === todayKey();
+
+  if (alreadyDone) {
+    return h(`
+      <div>
+        <button class="back" onclick="go('home')">← Home</button>
+        <span class="pill" style="background:#1e293b; color:#94a3b8">Daily Challenge</span>
+        <h1 class="title">Already done ✅</h1>
+        <p class="lede">You completed today's challenge. Come back tomorrow to keep your streak alive.</p>
+        <div class="result-box">
+          <div class="row"><span class="k">🔥 Current streak</span><span class="v">${S.streak} day${S.streak===1?'':'s'}</span></div>
+          <div class="row"><span class="k">Today</span><span class="v">${todayKey()}</span></div>
+        </div>
+        <button class="btn" onclick="go('home')">Back home</button>
+      </div>
+    `);
+  }
+
+  const opts = item.options.map((o,i) =>
+    `<button class="option-btn" id="d-${i}" onclick="pickDaily(${i})">${esc(o)}</button>`
+  ).join('');
+
+  payload = { stage:'play', idx, item, picked: null };
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#0e2233; color:${item.color}">${item.concept}</span>
+      <h1 class="title">Daily Challenge</h1>
+      <p class="lede">${esc(item.q)}</p>
+      ${opts}
+      <button class="btn" id="dConfirm" style="margin-top:6px" disabled onclick="finishDaily()">Lock in answer</button>
+    </div>
+  `);
+}
+
+function pickDaily(i) {
+  payload.picked = i;
+  payload.item.options.forEach((_, j) => {
+    document.getElementById('d-' + j).classList.toggle('picked', j === i);
+  });
+  document.getElementById('dConfirm').disabled = false;
+}
+
+function finishDaily() {
+  const { item, picked } = payload;
+  const correct = picked === item.correct;
+
+  const today = todayKey();
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const yesterday = dateKey(y);
+  if (S.lastDaily !== today) {
+    S.streak = (S.lastDaily === yesterday) ? S.streak + 1 : 1;
+    S.lastDaily = today;
+    save();
+  }
+
+  go('daily', { stage:'result', item, picked, correct });
+}
+
+function renderDailyResult() {
+  const { item, picked, correct } = payload;
+
+  const opts = item.options.map((o,i) => {
+    let cls = '';
+    if (i === item.correct) cls = 'correct';
+    else if (i === picked) cls = 'wrong';
+    return `<div class="option-btn ${cls}" style="cursor:default">${esc(o)}</div>`;
+  }).join('');
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#0e2233; color:${item.color}">${item.concept}</span>
+      <h1 class="title">${correct ? 'Correct 🎉' : 'Not quite'}</h1>
+      <p class="lede">${esc(item.q)}</p>
+
+      ${opts}
+
+      <div class="verdict ${correct ? 'win' : 'mid'}" style="margin-top:14px">
+        <strong>${correct ? 'Nice, you saw it.' : 'Here\'s the reasoning:'}</strong>
+        ${esc(item.why)}
+      </div>
+
+      <div class="result-box">
+        <div class="row"><span class="k">🔥 Streak</span><span class="v">${S.streak} day${S.streak===1?'':'s'}</span></div>
+        <div class="row"><span class="k">Result</span><span class="v ${correct?'good':'bad'}">${correct?'Correct':'Missed'}</span></div>
+      </div>
+
+      <button class="btn" onclick="go('home')">Back home</button>
+    </div>
+  `);
+}
+
+/* =========================================================
+   CHALLENGE MODE
+   ========================================================= */
+const CHALLENGE_QS = [
+  {
+    q: 'You skip a $40 shift to study. What is your opportunity cost?',
+    options: ['$40', '$0, studying is free', 'The tuition you paid'],
+    correct: 0
+  },
+  {
+    q: 'A 5th worker adds $16 revenue and costs $20. Hire?',
+    options: ['Yes, more output is good', 'No, marginal cost > benefit', 'Only if demand is high'],
+    correct: 1
+  },
+  {
+    q: 'Harvest exceeds breeding rate. The fish stock will…',
+    options: ['Grow', 'Stay stable', 'Decline'],
+    correct: 2
+  },
+  {
+    q: 'A strict rent cap most likely causes what downstream effect?',
+    options: ['More housing supply', 'Less housing supply', 'No change at all'],
+    correct: 1
+  },
+  {
+    q: 'Which is a reinforcing feedback loop?',
+    options: ['A thermostat', 'Compound interest', 'A speed governor'],
+    correct: 1
+  },
+  {
+    q: 'You already paid $50 for a ticket. The concert is boring. What should guide your decision to stay?',
+    options: ['The $50 you spent', 'How much fun you\'ll have from now on', 'How long you waited in line'],
+    correct: 1
+  }
+];
+const CHAL_SECONDS = 8;
+
+let chalIdx = 0, chalCorrect = 0, chalPicked = null, chalTimer = null;
+
+function renderChallenge() {
+  if (payload.stage === 'result') return renderChallengeResult();
+  // Fresh run: reset state and show the first question in this same render.
+  if (payload.stage !== 'question') {
+    chalIdx = 0; chalCorrect = 0;
+    payload = { stage:'question', results: [] };
+  }
+  return renderChallengeQuestion();
+}
+
+function renderChallengeQuestion() {
+  const q = CHALLENGE_QS[chalIdx];
+  chalPicked = null;
+
+  const dots = CHALLENGE_QS.map((_,i) => {
+    let c = '';
+    if (i < chalIdx) c = payload.results[i] ? 'ok' : 'no';
+    else if (i === chalIdx) c = 'on';
+    return `<i class="${c}"></i>`;
+  }).join('');
+
+  const opts = q.options.map((o,i) =>
+    `<button class="option-btn" id="c-${i}" onclick="pickChallenge(${i})">${esc(o)}</button>`
+  ).join('');
+
+  const node = h(`
+    <div>
+      <button class="back" onclick="go('home')">← Quit</button>
+      <div class="dots">${dots}</div>
+      <div class="timerbar run" id="tbar"><i></i></div>
+      <p class="muted" style="margin:0 0 6px">Question ${chalIdx + 1} of ${CHALLENGE_QS.length}</p>
+      <h1 class="title" style="font-size:22px">${esc(q.q)}</h1>
+      <div style="margin-top:16px">${opts}</div>
+    </div>
+  `);
+
+  clearTimeout(chalTimer);
+  chalTimer = setTimeout(() => {
+    if (chalPicked === null && screen === 'challenge' && payload.stage === 'question') {
+      chalPicked = -1;
+      answerChallenge(-1);
+    }
+  }, CHAL_SECONDS * 1000);
+
+  return node;
+}
+
+function pickChallenge(i) {
+  if (chalPicked !== null) return;
+  chalPicked = i;
+  clearTimeout(chalTimer);
+  const el = document.getElementById('c-' + i);
+  if (el) el.classList.add('picked');
+  const bar = document.getElementById('tbar');
+  if (bar) bar.querySelector('i').style.animationPlayState = 'paused';
+  chalTimer = setTimeout(() => answerChallenge(i), 320);
+}
+
+function answerChallenge(i) {
+  clearTimeout(chalTimer);
+  const q = CHALLENGE_QS[chalIdx];
+  const correct = i === q.correct;
+  if (correct) chalCorrect++;
+  payload.results[chalIdx] = correct;
+
+  // brief feedback flash
+  const el = document.getElementById('c-' + q.correct);
+  if (el) el.classList.add('correct');
+  if (i > -1 && i !== q.correct) {
+    const wrong = document.getElementById('c-' + i);
+    if (wrong) { wrong.classList.remove('picked'); wrong.classList.add('wrong'); }
+  }
+
+  chalIdx++;
+  chalTimer = setTimeout(() => {
+    if (screen !== 'challenge') return;
+    if (chalIdx >= CHALLENGE_QS.length) {
+      let stars = 1;
+      if (chalCorrect >= 4) stars = 2;
+      if (chalCorrect >= 6) stars = 3;
+      setStars('challenge', stars);
+      go('challenge', { stage:'result', score: chalCorrect, total: CHALLENGE_QS.length, results: payload.results, stars });
+    } else {
+      render();
+    }
+  }, i === -1 ? 900 : 620);
+}
+
+function renderChallengeResult() {
+  const { score, total, results, stars } = payload;
+  const pct = Math.round((score / total) * 100);
+  let title, cls;
+  if (score === total) { title = 'Flawless ⚡'; cls = 'win'; }
+  else if (pct >= 66) { title = 'Strong run'; cls = 'win'; }
+  else if (pct >= 50) { title = 'Getting there'; cls = 'mid'; }
+  else { title = 'Keep training'; cls = 'mid'; }
+
+  const review = CHALLENGE_QS.map((q,i) => `
+    <div class="row">
+      <span class="k">${esc(q.q)}<br><span class="good" style="font-size:12px">${esc(q.options[q.correct])}</span></span>
+      <span class="v ${results[i]?'good':'bad'}">${results[i]?'✓':'✗'}</span>
+    </div>`).join('');
+
+  return h(`
+    <div>
+      <button class="back" onclick="go('home')">← Home</button>
+      <span class="pill" style="background:#2a1f05; color:#fbbf24">Challenge Mode</span>
+      <h1 class="title">${title}</h1>
+
+      <div class="result-box">
+        <div class="row"><span class="k">Correct answers</span><span class="v">${score} / ${total}</span></div>
+        <div class="row"><span class="k">Accuracy</span><span class="v">${pct}%</span></div>
+        <div class="row"><span class="k">Concepts covered</span><span class="v">All 4</span></div>
+      </div>
+
+      <div class="verdict ${cls}">
+        <strong>${score === total ? 'You nailed every one.' : 'Review the ones you missed.'}</strong>
+        Challenge mode mixes all four concepts with no hints and a time limit, which is closer to how these decisions show up in real life.
+      </div>
+
+      <p class="section-label">Answers</p>
+      <div class="result-box">${review}</div>
+
+      <div class="center big-star" aria-label="${stars} of 3 stars">${starRow(stars)}</div>
+
+      <button class="btn" onclick="go('challenge')">Run it again</button>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  `);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+render();
+</script>
+</body>
+</html>
