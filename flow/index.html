@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flow</title>
+<style>
+/* Layout: one phone-width column; a pipeline of stage cards you tune, then run. */
+:root{
+  color-scheme:dark;
+  --bg:#070a10; --card:#0f1620; --card2:#0b1119; --line:#1a2433;
+  --txt:#e6edf7; --muted:#71819a; --dim:#4a586c;
+  --green:#4ade80; --cyan:#22d3ee; --amber:#fbbf24; --red:#f87171; --purple:#a78bfa;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+#app{width:100%;max-width:430px;margin:0 auto;padding:18px 16px 40px}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+button{font-family:inherit}
+
+/* HOME */
+.logo{font-size:34px;font-weight:800;letter-spacing:-1.5px;margin:20px 0 4px;
+  background:linear-gradient(100deg,#22d3ee,#a78bfa);-webkit-background-clip:text;
+  background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--muted);font-size:14px;margin:0 0 28px;line-height:1.5}
+.levels{display:flex;flex-direction:column;gap:10px}
+.level-card{display:flex;align-items:center;gap:13px;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;
+  transition:transform .12s,border-color .15s;color:inherit;text-align:left;width:100%}
+.level-card:active{transform:scale(.98);border-color:#2d3f57}
+.lc-num{width:34px;height:34px;border-radius:11px;background:var(--card2);
+  display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--dim);
+  border:1px solid var(--line);flex-shrink:0}
+.lc-txt{flex:1;min-width:0}
+.lc-txt h3{margin:0 0 2px;font-size:15px;font-weight:700}
+.lc-txt p{margin:0;font-size:12px;color:var(--muted);line-height:1.35}
+.lc-tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  color:var(--purple);margin-bottom:3px}
+.lc-stars{font-size:13px;letter-spacing:1px;color:#243141;flex-shrink:0}
+.lc-stars .on{color:var(--amber)}
+.foot{margin-top:26px;font-size:12px;color:var(--dim);line-height:1.7;text-align:center}
+
+/* LEVEL */
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.back{background:none;border:none;color:var(--muted);font-size:20px;padding:4px 6px;cursor:pointer;line-height:1}
+.lvlnum{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+h1.lvlname{font-size:24px;font-weight:800;letter-spacing:-.7px;margin:0 0 6px;line-height:1.15;text-wrap:balance}
+.brief{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 14px}
+
+.res{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:99px;background:var(--card);
+  border:1px solid var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
+.chip b{color:var(--txt)}
+.chip.ai b{color:var(--purple)}
+
+.hud{display:flex;gap:8px;margin-bottom:10px}
+.hud-item{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  padding:9px 6px;text-align:center}
+.hud-item span{display:block;font-size:9.5px;color:var(--dim);text-transform:uppercase;
+  letter-spacing:1px;font-weight:700;margin-bottom:3px}
+.hud-item b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.goalbar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}
+.goalbar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#22d3ee,#4ade80);transition:width .18s linear}
+
+.inflow,.flow{text-align:center;font-size:11px;color:var(--dim);font-weight:600;letter-spacing:.4px;padding:5px 0}
+.flow b{color:var(--cyan);font-weight:800;font-variant-numeric:tabular-nums}
+.outflow b{color:var(--green)}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 13px;transition:border-color .3s}
+.stage.choke{border-color:#5a2a2a}
+.stage-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+.stage-name{font-size:14.5px;font-weight:700}
+.stage-cap{font-size:11px;color:var(--dim);font-weight:600}
+.stage-cap b{color:var(--muted);font-weight:800}
+.bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;margin-bottom:9px;border:1px solid #131c27}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--cyan);transition:width .16s linear,background .3s}
+.bar i.warm{background:var(--amber)}
+.bar i.hot{background:var(--red)}
+.stage-bot{display:flex;justify-content:space-between;align-items:center;
+  font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:11px}
+.stage-bot b{font-weight:800;font-variant-numeric:tabular-nums;color:var(--txt)}
+.rework{color:var(--red);font-weight:700;font-size:10.5px}
+.stage-controls{display:flex;flex-wrap:wrap;gap:8px}
+.ctl{display:flex;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.ctl.ai{border-color:#2a1f3d}
+.ctl button{background:none;border:none;color:var(--cyan);font-size:19px;width:36px;height:34px;
+  cursor:pointer;font-weight:600;display:grid;place-items:center;transition:background .12s}
+.ctl.ai button{color:var(--purple)}
+.ctl button:active{background:#152030}
+.ctl button:disabled{color:#26313f;cursor:default}
+.ctl .n{font-size:12.5px;font-weight:700;min-width:40px;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.controls{display:flex;gap:9px;margin-top:18px}
+.btn-run{flex:1;background:linear-gradient(100deg,#22d3ee,#3b82f6);border:none;color:#04121c;font-size:16px;
+  font-weight:800;padding:16px;border-radius:15px;cursor:pointer;letter-spacing:.3px;transition:transform .12s,opacity .15s}
+.btn-run:active{transform:scale(.98)}
+.btn-run:disabled{opacity:.4;cursor:default;transform:none}
+.btn-reset{background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:17px;padding:0 20px;
+  border-radius:15px;cursor:pointer;transition:transform .12s}
+.btn-reset:active{transform:scale(.96)}
+.runs{margin-top:14px;font-size:12px;color:var(--dim);line-height:1.8}
+.runs .r{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:1px 7px;margin:0 4px 4px 0;color:var(--muted);font-variant-numeric:tabular-nums}
+.runs .r.pass{color:var(--green);border-color:#1d4d33}
+
+.result{position:fixed;inset:0;background:rgba(4,7,12,.85);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));z-index:10;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.result-card{width:100%;max-width:400px;max-height:100%;overflow:auto;background:var(--card);border:1px solid var(--line);
+  border-radius:22px;padding:24px 20px 20px;animation:slideup .3s cubic-bezier(.2,.8,.3,1)}
+@keyframes slideup{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.result-card.pass{border-color:#1d4d33}
+.stars{font-size:30px;letter-spacing:5px;color:#1e2937;text-align:center;margin-bottom:10px}
+.stars .on{color:var(--amber);text-shadow:0 0 16px rgba(251,191,36,.45)}
+.result-card h2{margin:0 0 6px;font-size:23px;text-align:center;font-weight:800;letter-spacing:-.5px;color:var(--amber)}
+.result-card.pass h2{color:var(--green)}
+.rdel{text-align:center;font-size:13px;color:var(--muted);margin:0 0 18px;font-weight:600}
+.rinsight{font-size:13.5px;line-height:1.6;color:#b9c8dc;margin:0 0 12px;background:var(--card2);
+  border-left:3px solid var(--cyan);border-radius:0 12px 12px 0;padding:13px 14px}
+.rinsight.hint{border-left-color:var(--amber)}
+.rinsight b.k{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--cyan);margin-bottom:4px}
+.rinsight.hint b.k{color:var(--amber)}
+.rinsight.ai{border-left-color:var(--purple)}
+.rinsight.ai b.k{color:var(--purple)}
+.result-btns{display:flex;gap:9px;margin-top:8px}
+.result-btns button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-size:14.5px;
+  font-weight:700;padding:14px;border-radius:13px;cursor:pointer;transition:transform .12s}
+.result-btns button:active{transform:scale(.97)}
+.result-btns button.primary{background:linear-gradient(100deg,#22d3ee,#3b82f6);border:none;color:#04121c}
+
+@media (prefers-reduced-motion:reduce){
+  .result,.result-card{animation:none}
+  .bar i,.goalbar i{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const $ = id => document.getElementById(id);
+
+/*
+  Each level is a pipeline. Work enters Intake every tick, and each stage moves
+  up to its capacity forward. A stage with rework sends that share of what it
+  processed back into its own queue. People add capacity with no rework; an AI
+  agent adds more capacity but brings its rework rate to the whole stage.
+  Star thresholds were set by brute-forcing every placement.
+*/
+const LEVELS = [
+  {
+    id:'bottleneck', name:'The Bottleneck', concept:'Constraints',
+    brief:'Work is piling up and you have one extra person. Where do they go?',
+    ticks:15, inflow:5, humans:1,
+    stages:[
+      {name:'Intake',   base:6, power:4},
+      {name:'Drafting', base:2, power:4},
+      {name:'Delivery', base:6, power:4}
+    ],
+    goal:60, stars:[60,68,74],
+    hint:'Run it once with nobody placed and watch which queue fills up. That is where work is waiting.',
+    insight:'An extra pair of hands only counts at the constraint. Speed up any other stage and the pile just moves downstream: same spend, same output.',
+    takeaway:'Before you add AI anywhere, find the step everything waits on. An agent on a step that already has slack is cost with no return.'
+  },
+  {
+    id:'allocation', name:'Allocation', concept:'Opportunity cost',
+    brief:'Two people, three stages. Every person you place here is one you can\'t place there.',
+    ticks:15, inflow:6, humans:2,
+    stages:[
+      {name:'Intake',   base:3, power:3},
+      {name:'Drafting', base:2, power:3},
+      {name:'Delivery', base:6, power:3}
+    ],
+    goal:60, stars:[60,68,74],
+    hint:'More than one stage is slower than the work arriving. Fixing one constraint just reveals the next.',
+    insight:'The real cost of a resource is the result you didn\'t get elsewhere. Two people on one constraint adds nothing once the stage before it caps the flow. One in each bottleneck is what works.',
+    takeaway:'Agent capacity, review time and budget are all finite. "Where would this agent do the most good?" beats "could an agent do this?"'
+  },
+  {
+    id:'leak', name:'The Leak', concept:'Feedback loops',
+    brief:'Drafting sends half its work back for rework. Two people to place. Watch what the loop does to the capacity you paid for.',
+    ticks:15, inflow:8, humans:2,
+    stages:[
+      {name:'Intake',   base:6, power:3},
+      {name:'Drafting', base:5, power:3, rework:0.5},
+      {name:'Delivery', base:6, power:3}
+    ],
+    goal:60, stars:[60,70,79],
+    hint:'Capacity on paper isn\'t capacity in practice. Half of what Drafting finishes comes straight back into its queue.',
+    insight:'A rework loop eats capacity you thought you had. At 50% rework, Drafting needs double the hands it appears to. Every unit that comes back is a unit that didn\'t move forward, and the queue hides it until the loop is all that\'s left.',
+    takeaway:'Rework is what an unreliable agent costs you: outputs that bounce back for another pass. Measure how much an agent\'s work you redo, not just how much it produces.'
+  },
+  {
+    id:'agent', name:'Deploy the Agent', concept:'Unintended consequences',
+    brief:'You get one AI agent and two people. The agent is fast but sloppy: 35% of its stage\'s work comes back. Find the spot where its speed beats its mess.',
+    ticks:15, inflow:8, humans:2, aiMax:1,
+    ai:{power:5, rework:0.35},
+    stages:[
+      {name:'Intake',   base:5, power:3},
+      {name:'Drafting', base:3, power:3},
+      {name:'Review',   base:5, power:3, rework:0.15}
+    ],
+    goal:75, stars:[75,80,86],
+    hint:'Try the agent in each stage and watch where its rework piles up. At one spot it does worse than no agent at all.',
+    insight:'At Review, the agent\'s mistakes bounce at the final gate, and you end up below having no agent at all. At Drafting, the constraint, each bounced item steals capacity you can\'t spare. At Intake there\'s room downstream to absorb the loop, so its speed turns into real throughput.',
+    takeaway:'Put a fast, error-prone agent where its mistakes are cheap and there\'s slack to catch them. Keep reliable people on the constraint and the quality gate.'
+  },
+  {
+    id:'margin', name:'The Margin', concept:'Marginal thinking',
+    brief:'Every delivery earns $10. Each AI agent costs $60 a run, and up to 5 are available. Maximize profit, not output.',
+    ticks:15, inflow:10, humans:0, aiMax:5,
+    ai:{power:3, rework:0.1},
+    econ:{value:10, ai:60},
+    stages:[
+      {name:'Intake',   base:6, power:3},
+      {name:'Drafting', base:3, power:3},
+      {name:'Review',   base:6, power:3}
+    ],
+    goal:800, stars:[800,890,950],
+    hint:'An agent pays for itself only if it adds at least 6 deliveries. Compare runs: what did the last agent you added really bring in?',
+    insight:'Stop adding agents when the next one earns less than it costs. Your first agent at Drafting adds about 36 deliveries. Once every stage keeps up, a 5th adds about one: $10 of output for $60. Maximum output and maximum profit are different targets.',
+    takeaway:'"More agents" is not a strategy. Price each one by the extra output it creates at the margin, and stop when that falls below its cost in money, oversight and risk.'
+  },
+  {
+    id:'hybrid', name:'Hybrid Team', concept:'Trade-offs',
+    brief:'$300 budget. People cost $100 and never cause rework. AI agents cost $50, are faster, and bring 30% rework. Build the team that delivers the most.',
+    ticks:15, inflow:10, budget:300,
+    ai:{power:4, rework:0.3},
+    econ:{human:100, ai:50},
+    stages:[
+      {name:'Intake',   base:4, power:3},
+      {name:'Drafting', base:3, power:3},
+      {name:'Review',   base:5, power:3}
+    ],
+    goal:95, stars:[95,105,112],
+    hint:'An all-human team can\'t get there, and all-AI comes close. Where would a mistake cost you the most?',
+    insight:'Cheap, fast agents go upstream, and your one expensive, reliable person goes on the final gate, where a mistake costs the most. All-AI comes close, all-human falls well short. The mix wins because each resource sits where its weakness costs the least.',
+    takeaway:'This is the shape of most good AI workflows: agents do the volume, people own the checkpoints. Design the human-in-the-loop step on purpose. Don\'t bolt it on.'
+  }
+];
+
+let curIdx = 0, L = null, hAlloc = [], aAlloc = [], sim = null, timer = null, runs = [];
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem('flow-progress') || '{}'); } catch(e){}
+
+const sum = a => a.reduce((x,y)=>x+y,0);
+const isProfit = () => !!(L.econ && L.econ.value);
+const fmt = v => isProfit() ? '$' + v : String(v);
+function spend(){ return L.econ ? sum(hAlloc)*(L.econ.human||0) + sum(aAlloc)*(L.econ.ai||0) : 0; }
+function canAddHuman(){ return L.budget ? spend() + L.econ.human <= L.budget : sum(hAlloc) < (L.humans||0); }
+function canAddAI(){ return L.budget ? spend() + L.econ.ai <= L.budget : sum(aAlloc) < (L.aiMax||0); }
+const hasHumans = () => !!(L.budget || L.humans);
+const hasAI = () => !!L.ai;
+function stageCap(i){ const s=L.stages[i]; return s.base + hAlloc[i]*s.power + aAlloc[i]*(L.ai?L.ai.power:0); }
+function stageRework(i){ return (L.stages[i].rework||0) + (aAlloc[i] > 0 ? L.ai.rework : 0); }
+
+/* ---------- HOME ---------- */
+function clearOverlay(){ document.querySelectorAll('.result').forEach(e => e.remove()); }
+function goHome() {
+  clearInterval(timer); timer = null; sim = null; clearOverlay();
+  const total = sum(Object.values(progress));
+  $('app').innerHTML = `
+    <div class="logo">Flow</div>
+    <p class="tagline">Think in systems. Decide like an economist. Then decide where the AI goes.</p>
+    <div class="levels">
+      ${LEVELS.map((l,i) => {
+        const st = progress[l.id] || 0;
+        return `<button class="level-card" onclick="startLevel(${i})">
+          <div class="lc-num">${i+1}</div>
+          <div class="lc-txt"><span class="lc-tag">${l.concept}</span><h3>${l.name}</h3><p>${l.brief}</p></div>
+          <div class="lc-stars" aria-label="${st} of 3 stars">${[0,1,2].map(s=>`<span class="${s<st?'on':''}">★</span>`).join('')}</div>
+        </button>`;
+      }).join('')}
+    </div>
+    <p class="foot">${total} / ${LEVELS.length*3} stars<br>Every level is a system.<br>Find the constraint. Watch the loop. Expect the side effect.</p>
+  `;
+  window.scrollTo(0,0);
+}
+
+/* ---------- LEVEL ---------- */
+function startLevel(i) {
+  clearInterval(timer); timer = null; clearOverlay();
+  curIdx = i; L = LEVELS[i];
+  hAlloc = L.stages.map(() => 0);
+  aAlloc = L.stages.map(() => 0);
+  sim = null; runs = [];
+  renderLevel();
+  window.scrollTo(0,0);
+}
+
+function renderLevel() {
+  $('app').innerHTML = `
+    <div class="top">
+      <button class="back" onclick="goHome()" aria-label="Back to levels">←</button>
+      <div class="lvlnum">Level ${curIdx+1} / ${LEVELS.length} · ${L.concept}</div>
+    </div>
+    <h1 class="lvlname">${L.name}</h1>
+    <p class="brief">${L.brief}</p>
+    <div class="res" id="res">${resHTML()}</div>
+    <div class="hud">
+      <div class="hud-item"><span>Delivered</span><b id="delivered">0</b></div>
+      ${isProfit() ? `<div class="hud-item"><span>Profit</span><b id="profit">$${-spend()}</b></div>` : ''}
+      <div class="hud-item"><span>Target</span><b>${fmt(L.goal)}</b></div>
+      <div class="hud-item"><span>Tick</span><b id="tick">0/${L.ticks}</b></div>
+    </div>
+    <div class="goalbar"><i id="goalbar-fill"></i></div>
+    <div id="pipeline">${pipelineHTML()}</div>
+    <div class="controls">
+      <button class="btn-run" id="btn-run" onclick="run()">▶ Run ${L.ticks} ticks</button>
+      <button class="btn-reset" onclick="resetSim()" aria-label="Reset">↺</button>
+    </div>
+    <div class="runs" id="runs">${runsHTML()}</div>
+  `;
+}
+
+function resHTML() {
+  const out = [];
+  if (L.budget) {
+    out.push(`<span class="chip">Budget <b>$${L.budget - spend()}</b> left of $${L.budget}</span>`);
+    out.push(`<span class="chip">👤 $${L.econ.human}</span><span class="chip ai">🤖 <b>$${L.econ.ai}</b></span>`);
+  } else {
+    if (L.humans) out.push(`<span class="chip">👤 People <b>${sum(hAlloc)} / ${L.humans}</b> placed</span>`);
+    if (L.aiMax) out.push(`<span class="chip ai">🤖 AI agents <b>${sum(aAlloc)} / ${L.aiMax}</b></span>`);
+    if (isProfit()) out.push(`<span class="chip">Agent cost <b>$${spend()}</b></span>`);
+  }
+  return out.join('');
+}
+
+function runsHTML() {
+  if (!runs.length) return '';
+  return 'Your runs: ' + runs.map(r => `<span class="r ${r.pass?'pass':''}">${fmt(r.score)}</span>`).join('');
+}
+
+function pipelineHTML() {
+  let out = `<div class="inflow">▼ ${L.inflow} / tick arriving</div>`;
+  L.stages.forEach((s, i) => {
+    out += stageHTML(s, i);
+    const last = i === L.stages.length - 1;
+    out += `<div class="flow ${last?'outflow':''}">▼ <b id="flow-${i}">0.0</b> / tick${last?' delivered':''}</div>`;
+  });
+  return out;
+}
+
+function stageHTML(s, i) {
+  const rw = stageRework(i);
+  const lockH = !!sim, lockA = !!sim;
+  return `
+    <div class="stage" id="stage-${i}">
+      <div class="stage-top">
+        <span class="stage-name">${s.name}</span>
+        <span class="stage-cap">capacity <b>${stageCap(i)}</b>/tick</span>
+      </div>
+      <div class="bar"><i id="bar-${i}"></i></div>
+      <div class="stage-bot">
+        <span>queue <b id="q-${i}">0</b></span>
+        ${rw > 0 ? `<span class="rework">↩ ${Math.round(rw*100)}% rework</span>` : ''}
+      </div>
+      <div class="stage-controls">
+        ${hasHumans() ? `<div class="ctl">
+          <button onclick="adj('h',${i},-1)" ${lockH||hAlloc[i]===0?'disabled':''} aria-label="Remove person from ${s.name}">−</button>
+          <span class="n">👤 ${hAlloc[i]}</span>
+          <button onclick="adj('h',${i},1)" ${lockH||!canAddHuman()?'disabled':''} aria-label="Add person to ${s.name}">+</button>
+        </div>` : ''}
+        ${hasAI() ? `<div class="ctl ai">
+          <button onclick="adj('a',${i},-1)" ${lockA||aAlloc[i]===0?'disabled':''} aria-label="Remove AI agent from ${s.name}">−</button>
+          <span class="n">🤖 ${aAlloc[i]}</span>
+          <button onclick="adj('a',${i},1)" ${lockA||!canAddAI()?'disabled':''} aria-label="Add AI agent to ${s.name}">+</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function adj(kind, i, d) {
+  if (sim) return;
+  const arr = kind === 'h' ? hAlloc : aAlloc;
+  if (d > 0 && !(kind === 'h' ? canAddHuman() : canAddAI())) return;
+  if (d < 0 && arr[i] <= 0) return;
+  arr[i] += d;
+  $('pipeline').innerHTML = pipelineHTML();
+  $('res').innerHTML = resHTML();
+  if ($('profit')) $('profit').textContent = '$' + (-spend());
+}
+
+/* ---------- SIM ---------- */
+function run() {
+  if (sim) return;
+  sim = {
+    tick:0, delivered:0, cost: spend(),
+    stages: L.stages.map((s, i) => ({ cap: stageCap(i), rework: stageRework(i), queue:0, flow:0 }))
+  };
+  $('pipeline').innerHTML = pipelineHTML(); // lock controls
+  $('btn-run').disabled = true;
+  $('btn-run').textContent = '● Running';
+  updateAll();
+  const fast = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  timer = setInterval(() => {
+    const more = stepSim();
+    updateAll();
+    if (!more) { clearInterval(timer); timer = null; finish(); }
+  }, fast ? 40 : 150);
+}
+
+function stepSim() {
+  if (sim.tick >= L.ticks) return false;
+  let carry = L.inflow;
+  for (const s of sim.stages) {
+    s.queue += carry;
+    const p = Math.min(s.queue, s.cap);
+    s.queue -= p;
+    const rw = p * s.rework;
+    s.queue += rw;
+    s.flow = p - rw;
+    carry = s.flow;
+  }
+  sim.delivered += carry;
+  sim.tick++;
+  return sim.tick < L.ticks;
+}
+
+function score() {
+  return isProfit() ? Math.round(sim.delivered * L.econ.value - sim.cost) : Math.round(sim.delivered);
+}
+
+function updateAll() {
+  let worst = -1, worstQ = 4;
+  sim.stages.forEach((s, i) => {
+    const q = Math.round(s.queue);
+    $('q-' + i).textContent = q;
+    const bar = $('bar-' + i);
+    bar.style.width = Math.min(q / 40 * 100, 100) + '%';
+    bar.className = q > 25 ? 'hot' : q > 12 ? 'warm' : '';
+    $('flow-' + i).textContent = s.flow.toFixed(1);
+    if (q > worstQ) { worstQ = q; worst = i; }
+  });
+  sim.stages.forEach((_, i) => $('stage-' + i).classList.toggle('choke', i === worst));
+  $('delivered').textContent = Math.round(sim.delivered);
+  if ($('profit')) $('profit').textContent = '$' + Math.round(sim.delivered * (L.econ.value||0) - sim.cost);
+  $('tick').textContent = sim.tick + '/' + L.ticks;
+  const sc = isProfit() ? Math.max(0, sim.delivered * L.econ.value - sim.cost) : sim.delivered;
+  $('goalbar-fill').style.width = Math.min(sc / L.goal * 100, 100) + '%';
+}
+
+function finish() {
+  const sc = score();
+  let stars = 0;
+  if (sc >= L.stars[2]) stars = 3;
+  else if (sc >= L.stars[1]) stars = 2;
+  else if (sc >= L.stars[0]) stars = 1;
+  if (stars > 0) {
+    progress[L.id] = Math.max(progress[L.id] || 0, stars);
+    try { localStorage.setItem('flow-progress', JSON.stringify(progress)); } catch(e){}
+  }
+  runs.push({ score: sc, pass: stars > 0 });
+  $('runs').innerHTML = runsHTML();
+  showResult(stars, sc);
+}
+
+function showResult(stars, sc) {
+  const pass = stars > 0;
+  const isLast = curIdx === LEVELS.length - 1;
+  const d = Math.round(sim.delivered);
+  const detail = isProfit()
+    ? `${d} delivered × $${L.econ.value} − $${sim.cost} agents = ${fmt(sc)} · target ${fmt(L.goal)}`
+    : `${d} delivered · target ${L.goal}`;
+  const more = pass && stars < 3 ? `<p class="rdel" style="margin:-10px 0 14px">There's a better setup. ${fmt(L.stars[2])} gets 3 stars.</p>` : '';
+  const div = document.createElement('div');
+  div.className = 'result';
+  div.innerHTML = `
+    <div class="result-card ${pass ? 'pass' : ''}" role="dialog" aria-modal="true" aria-labelledby="rtitle">
+      <div class="stars" aria-label="${stars} of 3 stars">${[0,1,2].map(i=>`<span class="${i<stars?'on':''}">★</span>`).join('')}</div>
+      <h2 id="rtitle">${pass ? (stars === 3 ? 'Optimal' : 'Solved') : 'Not quite'}</h2>
+      <p class="rdel">${detail}</p>
+      ${more}
+      ${pass
+        ? `<div class="rinsight"><b class="k">${L.concept}</b>${L.insight}</div>
+           <div class="rinsight ai"><b class="k">In your AI workflows</b>${L.takeaway}</div>`
+        : `<div class="rinsight hint"><b class="k">Hint</b>${L.hint}</div>`}
+      <div class="result-btns">
+        <button onclick="resetSim()">${pass ? 'Tune again' : 'Try again'}</button>
+        ${pass && !isLast ? `<button class="primary" onclick="startLevel(${curIdx+1})">Next →</button>` : ''}
+        ${pass && isLast ? `<button class="primary" onclick="goHome()">Done</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  const first = div.querySelector('.result-btns button:last-child');
+  if (first) first.focus();
+}
+
+// Keep the placement so the player can tweak one thing and run again.
+function resetSim() {
+  clearInterval(timer); timer = null; sim = null; clearOverlay();
+  renderLevel();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.querySelector('.result')) resetSim();
+});
+
+goHome();
+</script>
+</body>
+</html>
